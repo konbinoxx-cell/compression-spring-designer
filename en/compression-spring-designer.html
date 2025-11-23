@@ -113,6 +113,17 @@
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
         
+        .load-range {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .load-range .form-row {
+            margin-bottom: 10px;
+        }
+        
         .calculate-btn {
             background: var(--accent);
             color: white;
@@ -199,6 +210,11 @@
         .key-results {
             background: linear-gradient(135deg, #e8f4fd 0%, #d1ecf1 100%);
             border: 2px solid var(--secondary);
+        }
+        
+        .load-analysis {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #f39c12;
         }
         
         .design-status {
@@ -367,10 +383,22 @@
                 
                 <div class="input-group">
                     <h3>Load Conditions</h3>
-                    <div class="form-row">
-                        <div class="form-control">
-                            <label for="workingLoad">Working Load (F) [N]</label>
-                            <input type="number" id="workingLoad" value="100" step="1" min="1">
+                    <div class="load-range">
+                        <div class="form-row">
+                            <div class="form-control">
+                                <label for="minLoad">Minimum Load (Fmin) [N]</label>
+                                <input type="number" id="minLoad" value="50" step="1" min="0">
+                            </div>
+                            <div class="form-control">
+                                <label for="maxLoad">Maximum Load (Fmax) [N]</label>
+                                <input type="number" id="maxLoad" value="150" step="1" min="1">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-control">
+                                <label for="workingLoad">Working Load (F) [N]</label>
+                                <input type="number" id="workingLoad" value="100" step="1" min="1">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -391,76 +419,21 @@
                 <div class="result-card">
                     <h3>Basic Parameters</h3>
                     <div class="parameter-grid" id="basicParams">
-                        <div class="parameter-item">
-                            <span class="parameter-label">Material Type:</span>
-                            <span class="parameter-value">Music Wire</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Wire Diameter (d):</span>
-                            <span class="parameter-value">3.0 mm</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Mean Diameter (D):</span>
-                            <span class="parameter-value">27.0 mm</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Free Length (H₀):</span>
-                            <span class="parameter-value">80.0 mm</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Active Coils (n):</span>
-                            <span class="parameter-value">10.5</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Spring Index (C):</span>
-                            <span class="parameter-value">9.00</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Pitch (t):</span>
-                            <span class="parameter-value">7.33 mm</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Total Coils:</span>
-                            <span class="parameter-value">12.1</span>
-                        </div>
+                        <!-- Basic parameters will be populated by JavaScript -->
                     </div>
                 </div>
                 
                 <div class="result-card key-results">
                     <h3>Performance Results</h3>
                     <div class="parameter-grid" id="performanceParams">
-                        <div class="parameter-item">
-                            <span class="parameter-label">Spring Rate (k):</span>
-                            <span class="parameter-value">4.00 N/mm</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Shear Stress (τ):</span>
-                            <span class="parameter-value">295.9 MPa</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Safety Factor (S.F.):</span>
-                            <span class="parameter-value" style="color: var(--success);">2.70</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Solid Height:</span>
-                            <span class="parameter-value">36.29 mm</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Deflection:</span>
-                            <span class="parameter-value">25.0 mm</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Resonant Frequency:</span>
-                            <span class="parameter-value">45.2 Hz</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Weight:</span>
-                            <span class="parameter-value">28.5 g</span>
-                        </div>
-                        <div class="parameter-item">
-                            <span class="parameter-label">Cost Estimate:</span>
-                            <span class="parameter-value">$3.20</span>
-                        </div>
+                        <!-- Performance results will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="result-card load-analysis">
+                    <h3>Load Analysis</h3>
+                    <div class="parameter-grid" id="loadAnalysis">
+                        <!-- Load analysis will be populated by JavaScript -->
                     </div>
                 </div>
                 
@@ -472,7 +445,7 @@
                     <div class="warning-header">
                         ⚠️ Design Recommendations
                     </div>
-                    <p id="warningText">Due to the high slenderness ratio (H₀/D = 2.96), the spring requires guidance during operation to ensure stability. We recommend installing guide rods or guide sleeves.</p>
+                    <p id="warningText"></p>
                     <div class="action-buttons">
                         <button class="btn btn-primary" id="optimizeBtn">Optimize Design</button>
                         <button class="btn btn-secondary" id="detailBtn">View Detailed Analysis</button>
@@ -534,10 +507,18 @@
                 springIndex: 9.00,
                 pitch: 7.33,
                 springRate: 4.00,
-                shearStress: 295.9,
+                minLoad: 50,
+                maxLoad: 150,
+                workingLoad: 100,
+                minStress: 148.0,
+                maxStress: 295.9,
+                meanStress: 221.9,
+                stressAmplitude: 73.9,
                 safetyFactor: 2.70,
                 solidHeight: 36.29,
-                deflection: 25.0,
+                minDeflection: 12.5,
+                maxDeflection: 37.5,
+                workingDeflection: 25.0,
                 resonantFrequency: 45.2,
                 weight: 28.5,
                 cost: 3.20
@@ -559,6 +540,8 @@
             const meanDiameter = parseFloat(document.getElementById('meanDiameter').value);
             const freeLength = parseFloat(document.getElementById('freeLength').value);
             const activeCoils = parseFloat(document.getElementById('activeCoils').value);
+            const minLoad = parseFloat(document.getElementById('minLoad').value);
+            const maxLoad = parseFloat(document.getElementById('maxLoad').value);
             const workingLoad = parseFloat(document.getElementById('workingLoad').value);
             
             const material = materialProperties[materialType];
@@ -577,15 +560,28 @@
                 // Shear stress calculation with Wahl correction factor
                 const C = springIndex;
                 const Kw = (4 * C - 1) / (4 * C - 4) + 0.615 / C;
-                const shearStress = (8 * workingLoad * meanDiameter * Kw) / 
-                                  (Math.PI * Math.pow(wireDiameter, 3));
                 
-                // Safety factor
-                const safetyFactor = material.tau_allow / shearStress;
+                const minStress = (8 * minLoad * meanDiameter * Kw) / 
+                                (Math.PI * Math.pow(wireDiameter, 3));
+                const maxStress = (8 * maxLoad * meanDiameter * Kw) / 
+                                (Math.PI * Math.pow(wireDiameter, 3));
+                const workingStress = (8 * workingLoad * meanDiameter * Kw) / 
+                                    (Math.PI * Math.pow(wireDiameter, 3));
+                
+                const meanStress = (minStress + maxStress) / 2;
+                const stressAmplitude = (maxStress - minStress) / 2;
+                
+                // Safety factors
+                const staticSafetyFactor = material.tau_allow / maxStress;
+                const fatigueSafetyFactor = calculateFatigueSafetyFactor(material, meanStress, stressAmplitude);
+                
+                // Deflection calculations
+                const minDeflection = minLoad / springRate;
+                const maxDeflection = maxLoad / springRate;
+                const workingDeflection = workingLoad / springRate;
                 
                 // Other calculations
                 const solidHeight = totalCoils * wireDiameter;
-                const deflection = workingLoad / springRate;
                 const weight = (Math.PI * Math.pow(wireDiameter/2, 2) * 
                               Math.PI * meanDiameter * totalCoils * material.density / 1000);
                 const cost = weight * material.cost;
@@ -601,23 +597,41 @@
                     springIndex: springIndex.toFixed(2),
                     pitch: pitch.toFixed(2),
                     springRate: springRate.toFixed(2),
-                    shearStress: shearStress.toFixed(1),
-                    safetyFactor: safetyFactor.toFixed(2),
+                    minLoad,
+                    maxLoad,
+                    workingLoad,
+                    minStress: minStress.toFixed(1),
+                    maxStress: maxStress.toFixed(1),
+                    workingStress: workingStress.toFixed(1),
+                    meanStress: meanStress.toFixed(1),
+                    stressAmplitude: stressAmplitude.toFixed(1),
+                    staticSafetyFactor: staticSafetyFactor.toFixed(2),
+                    fatigueSafetyFactor: fatigueSafetyFactor.toFixed(2),
                     solidHeight: solidHeight.toFixed(2),
-                    deflection: deflection.toFixed(1),
+                    minDeflection: minDeflection.toFixed(1),
+                    maxDeflection: maxDeflection.toFixed(1),
+                    workingDeflection: workingDeflection.toFixed(1),
                     resonantFrequency: 45.2,
                     weight: weight.toFixed(1),
                     cost: cost.toFixed(2)
                 });
                 
                 // Update design status
-                updateDesignStatus(safetyFactor, springIndex, freeLength/meanDiameter);
+                updateDesignStatus(staticSafetyFactor, fatigueSafetyFactor, springIndex, freeLength/meanDiameter);
                 
                 // Restore button state
                 calculateBtn.disabled = false;
                 calculateBtn.textContent = 'Calculate Spring Parameters';
                 progressIndicator.style.display = 'none';
             }, 1500);
+        }
+
+        function calculateFatigueSafetyFactor(material, meanStress, stressAmplitude) {
+            // Simplified fatigue safety factor calculation
+            // In practice, this would use Goodman or Gerber criteria
+            const enduranceLimit = material.tau_allow * 0.45; // Estimated endurance limit
+            const fatigueStrength = enduranceLimit / stressAmplitude;
+            return Math.min(fatigueStrength, 10.0); // Cap at 10 for display purposes
         }
 
         function updateDisplay(params) {
@@ -659,8 +673,11 @@
             document.getElementById('basicParams').innerHTML = basicParamsHtml;
             
             // Update performance parameters
-            const safetyFactorColor = params.safetyFactor > 1.5 ? 'var(--success)' : 
-                                     params.safetyFactor > 1.0 ? 'var(--warning)' : 'var(--danger)';
+            const staticSafetyColor = params.staticSafetyFactor > 1.5 ? 'var(--success)' : 
+                                    params.staticSafetyFactor > 1.0 ? 'var(--warning)' : 'var(--danger)';
+            
+            const fatigueSafetyColor = params.fatigueSafetyFactor > 2.0 ? 'var(--success)' : 
+                                     params.fatigueSafetyFactor > 1.0 ? 'var(--warning)' : 'var(--danger)';
             
             const performanceParamsHtml = `
                 <div class="parameter-item">
@@ -668,20 +685,24 @@
                     <span class="parameter-value">${params.springRate} N/mm</span>
                 </div>
                 <div class="parameter-item">
-                    <span class="parameter-label">Shear Stress (τ):</span>
-                    <span class="parameter-value">${params.shearStress} MPa</span>
+                    <span class="parameter-label">Working Stress (τ):</span>
+                    <span class="parameter-value">${params.workingStress} MPa</span>
                 </div>
                 <div class="parameter-item">
-                    <span class="parameter-label">Safety Factor (S.F.):</span>
-                    <span class="parameter-value" style="color: ${safetyFactorColor};">${params.safetyFactor}</span>
+                    <span class="parameter-label">Static S.F.:</span>
+                    <span class="parameter-value" style="color: ${staticSafetyColor};">${params.staticSafetyFactor}</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">Fatigue S.F.:</span>
+                    <span class="parameter-value" style="color: ${fatigueSafetyColor};">${params.fatigueSafetyFactor}</span>
                 </div>
                 <div class="parameter-item">
                     <span class="parameter-label">Solid Height:</span>
                     <span class="parameter-value">${params.solidHeight} mm</span>
                 </div>
                 <div class="parameter-item">
-                    <span class="parameter-label">Deflection:</span>
-                    <span class="parameter-value">${params.deflection} mm</span>
+                    <span class="parameter-label">Working Deflection:</span>
+                    <span class="parameter-value">${params.workingDeflection} mm</span>
                 </div>
                 <div class="parameter-item">
                     <span class="parameter-label">Resonant Frequency:</span>
@@ -691,15 +712,48 @@
                     <span class="parameter-label">Weight:</span>
                     <span class="parameter-value">${params.weight} g</span>
                 </div>
+            `;
+            document.getElementById('performanceParams').innerHTML = performanceParamsHtml;
+            
+            // Update load analysis
+            const loadAnalysisHtml = `
+                <div class="parameter-item">
+                    <span class="parameter-label">Min Load (Fmin):</span>
+                    <span class="parameter-value">${params.minLoad} N</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">Max Load (Fmax):</span>
+                    <span class="parameter-value">${params.maxLoad} N</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">Working Load (F):</span>
+                    <span class="parameter-value">${params.workingLoad} N</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">Min Stress:</span>
+                    <span class="parameter-value">${params.minStress} MPa</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">Max Stress:</span>
+                    <span class="parameter-value">${params.maxStress} MPa</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">Mean Stress:</span>
+                    <span class="parameter-value">${params.meanStress} MPa</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">Stress Amplitude:</span>
+                    <span class="parameter-value">${params.stressAmplitude} MPa</span>
+                </div>
                 <div class="parameter-item">
                     <span class="parameter-label">Cost Estimate:</span>
                     <span class="parameter-value">$${params.cost}</span>
                 </div>
             `;
-            document.getElementById('performanceParams').innerHTML = performanceParamsHtml;
+            document.getElementById('loadAnalysis').innerHTML = loadAnalysisHtml;
         }
 
-        function updateDesignStatus(safetyFactor, springIndex, lengthRatio) {
+        function updateDesignStatus(staticSafetyFactor, fatigueSafetyFactor, springIndex, lengthRatio) {
             const designStatus = document.getElementById('designStatus');
             const warningPanel = document.getElementById('warningPanel');
             const warningText = document.getElementById('warningText');
@@ -708,22 +762,27 @@
             let statusClass = '';
             let warnings = [];
             
-            if (safetyFactor > 2.0) {
+            // Evaluate static safety
+            if (staticSafetyFactor > 2.0) {
                 statusMessage = '✅ Excellent Design - High Safety Margin';
-                statusClass = '';
-            } else if (safetyFactor > 1.2) {
+            } else if (staticSafetyFactor > 1.2) {
                 statusMessage = '✅ Good Design - Meets Requirements';
-                statusClass = '';
-            } else if (safetyFactor > 1.0) {
-                statusMessage = '⚠️ Marginal Design - Low Safety Factor';
+            } else if (staticSafetyFactor > 1.0) {
+                statusMessage = '⚠️ Marginal Design - Low Static Safety';
                 statusClass = 'warning';
-                warnings.push('Safety factor is low. Consider increasing wire diameter or reducing load.');
+                warnings.push('Static safety factor is low. Consider increasing wire diameter or reducing maximum load.');
             } else {
                 statusMessage = '❌ Unsafe Design - Immediate Revision Required';
                 statusClass = 'error';
-                warnings.push('Safety factor is insufficient! Risk of failure.');
+                warnings.push('Static safety factor is insufficient! Risk of failure under maximum load.');
             }
             
+            // Evaluate fatigue safety
+            if (fatigueSafetyFactor < 1.5) {
+                warnings.push('Fatigue safety factor is marginal for dynamic applications.');
+            }
+            
+            // Other checks
             if (springIndex < 4 || springIndex > 16) {
                 warnings.push('Spring index is outside recommended range (4-16).');
             }
