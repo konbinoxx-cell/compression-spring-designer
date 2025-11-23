@@ -3,13 +3,13 @@ import { Calculator, Info } from 'lucide-react';
 
 export default function CompressionSpringDesigner() {
   const [inputs, setInputs] = useState({
-    maxLoad: 100, // 最大工作载荷 N
-    minLoad: 20, // 最小工作载荷 N
-    workingStroke: 20, // 工作行程 mm
-    outerDiameter: 30, // 外径限制 mm
-    freeLength: 80, // 自由长度 mm
-    material: 'SWC', // 材料
-    wireDiameter: 3, // 线径 mm
+    maxLoad: 100,
+    minLoad: 20,
+    workingStroke: 20,
+    outerDiameter: 30,
+    freeLength: 80,
+    material: 'SWC',
+    wireDiameter: 3,
   });
 
   const [results, setResults] = useState(null);
@@ -29,54 +29,91 @@ export default function CompressionSpringDesigner() {
   };
 
   const calculate = () => {
-    const { maxLoad, minLoad, workingStroke, outerDiameter, freeLength, material, wireDiameter } = inputs;
+    const {
+      maxLoad,
+      minLoad,
+      workingStroke,
+      outerDiameter,
+      freeLength,
+      material,
+      wireDiameter
+    } = inputs;
+
+    // 🔒 输入校验
+    if (maxLoad <= minLoad) {
+      alert('Maximum load must be greater than minimum load.');
+      return;
+    }
+    if (workingStroke <= 0) {
+      alert('Working stroke must be positive.');
+      return;
+    }
+    if (wireDiameter <= 0) {
+      alert('Wire diameter must be positive.');
+      return;
+    }
+    if (outerDiameter <= wireDiameter) {
+      alert('Outer diameter must be greater than wire diameter.');
+      return;
+    }
+    if (freeLength <= 2 * wireDiameter) {
+      alert('Free length must be greater than 2×wire diameter.');
+      return;
+    }
+
     const mat = materials[material];
-    
-    // Mean diameter calculation
     const meanDiameter = outerDiameter - wireDiameter;
-    
-    // Spring rate
+
+    if (meanDiameter <= 0) {
+      alert('Invalid geometry: mean diameter ≤ 0.');
+      return;
+    }
+
     const springRate = (maxLoad - minLoad) / workingStroke;
-    
-    // Effective coils calculation
-    const G = mat.G; // Shear modulus MPa
+
+    if (springRate <= 0) {
+      alert('Invalid spring rate (≤0). Check load/stroke values.');
+      return;
+    }
+
+    const G = mat.G;
     const effectiveCoils = (G * Math.pow(wireDiameter, 4)) / (8 * Math.pow(meanDiameter, 3) * springRate);
-    
-    // Total coils (including support coils)
+
+    if (effectiveCoils <= 0 || !isFinite(effectiveCoils)) {
+      alert('Calculation failed: check input values (e.g., too stiff/soft).');
+      return;
+    }
+
     const totalCoils = effectiveCoils + 2;
-    
-    // Pitch
     const pitch = (freeLength - 2 * wireDiameter) / effectiveCoils;
-    
-    // Solid length
     const solidLength = wireDiameter * totalCoils;
-    
-    // Spring index
     const springIndex = meanDiameter / wireDiameter;
-    
-    // Wahl correction factor
+
+    if (springIndex <= 0) {
+      alert('Invalid spring index.');
+      return;
+    }
+
     const K = (4 * springIndex - 1) / (4 * springIndex - 4) + 0.615 / springIndex;
-    
-    // Maximum shear stress
     const maxShearStress = K * (8 * maxLoad * meanDiameter) / (Math.PI * Math.pow(wireDiameter, 3));
-    
-    // Maximum working length
-    const maxWorkingLength = freeLength - (maxLoad / springRate);
-    
-    // Minimum working length
-    const minWorkingLength = freeLength - ((maxLoad - minLoad + minLoad) / springRate);
-    
-    // Solid load
-    const solidLoad = springRate * (freeLength - solidLength);
-    
-    // Safety factor
+
+    // ✅ 修正长度计算
+    const maxWorkingLength = freeLength - (minLoad / springRate); // longest (light load)
+    const minWorkingLength = freeLength - (maxLoad / springRate); // shortest (heavy load)
+    const solidLoad = Math.max(0, springRate * (freeLength - solidLength));
+
     const safetyFactor = mat.allowableStress / maxShearStress;
-    
-    // Stability check
     const slendernessRatio = freeLength / meanDiameter;
-    const criticalSlenderness = 2.6; // Critical slenderness ratio
+    const criticalSlenderness = 2.6;
     const stabilityStatus = slendernessRatio > criticalSlenderness ? 'Needs Guiding' : 'Stable';
-    
+
+    const isValid =
+      safetyFactor > 1.2 &&
+      springIndex >= 4 &&
+      springIndex <= 16 &&
+      solidLoad > maxLoad &&
+      minWorkingLength > solidLength;
+
     setResults({
       meanDiameter: meanDiameter.toFixed(2),
       springRate: springRate.toFixed(2),
@@ -93,7 +130,7 @@ export default function CompressionSpringDesigner() {
       safetyFactor: safetyFactor.toFixed(2),
       slendernessRatio: slendernessRatio.toFixed(2),
       stabilityStatus,
-      isValid: safetyFactor > 1.2 && springIndex >= 4 && springIndex <= 16
+      isValid
     });
   };
 
@@ -109,7 +146,6 @@ export default function CompressionSpringDesigner() {
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Input Parameters</h2>
-              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -167,7 +203,6 @@ export default function CompressionSpringDesigner() {
 
             <div>
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Design Parameters</h2>
-              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -225,137 +260,220 @@ export default function CompressionSpringDesigner() {
           {results && (
             <div className="border-t pt-6">
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Calculation Results</h2>
-              
-              {/* Spring Diagram */}
+
               <div className="mb-6 bg-gray-50 p-6 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-4">Spring Design Diagram</h3>
                 <svg viewBox="0 0 800 600" className="w-full max-w-3xl mx-auto">
-                  {/* Background */}
-                  <rect width="800" height="600" fill="#ffffff"/>
-                  
-                  {/* Title */}
+                  <rect width="800" height="600" fill="#ffffff" />
+
                   <text x="400" y="30" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#374151">
                     Compression Spring - Technical Drawing
                   </text>
-                  
-                  {/* Spring visualization */}
-                  <g transform="translate(250, 100)">
+
+                  <g transform="translate(250, 80)">
                     {/* Centerline */}
-                    <line x1="0" y1="0" x2="0" y2="400" stroke="#94a3b8" strokeWidth="1" strokeDasharray="5,5"/>
-                    
-                    {/* Spring coils */}
-                    {Array.from({length: Math.ceil(parseFloat(results.totalCoils))}).map((_, i) => {
-                      const y = i * 40 + 20;
-                      const coilWidth = parseFloat(results.meanDiameter) * 1.5;
+                    <line x1="0" y1="0" x2="0" y2="400" stroke="#94a3b8" strokeWidth="1" strokeDasharray="5,5" />
+
+                    {/* Spring coils - drawn as circles */}
+                    {Array.from({ length: Math.max(4, Math.min(12, Math.floor(parseFloat(results.effectiveCoils)))) }).map((_, i) => {
+                      const y = i * 28 + 50;
                       return (
-                        <g key={i}>
-                          <ellipse cx="-30" cy={y} rx={coilWidth/2} ry="8" fill="none" stroke="#3b82f6" strokeWidth="3"/>
-                          <ellipse cx="30" cy={y + 20} rx={coilWidth/2} ry="8" fill="none" stroke="#3b82f6" strokeWidth="3"/>
-                        </g>
+                        <circle
+                          key={i}
+                          cx="0"
+                          cy={y}
+                          r={parseFloat(results.meanDiameter) * 1.0}
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="2.5"
+                        />
                       );
                     })}
-                    
-                    {/* End coils (solid) */}
-                    <ellipse cx="0" cy="10" rx={parseFloat(results.meanDiameter) * 0.75} ry="6" fill="#3b82f6" stroke="#3b82f6" strokeWidth="2"/>
-                    <ellipse cx="0" cy={parseFloat(results.totalCoils) * 40} rx={parseFloat(results.meanDiameter) * 0.75} ry="6" fill="#3b82f6" stroke="#3b82f6" strokeWidth="2"/>
-                    
-                    {/* Dimension lines - Free Length */}
-                    <line x1="-100" y1="10" x2="-100" y2={parseFloat(results.totalCoils) * 40} stroke="#ef4444" strokeWidth="2"/>
-                    <line x1="-105" y1="10" x2="-95" y2="10" stroke="#ef4444" strokeWidth="2"/>
-                    <line x1="-105" y1={parseFloat(results.totalCoils) * 40} x2="-95" y2={parseFloat(results.totalCoils) * 40} stroke="#ef4444" strokeWidth="2"/>
-                    <text x="-130" y={parseFloat(results.totalCoils) * 20 + 5} fontSize="14" fill="#ef4444" fontWeight="bold">H₀={results.freeLength}mm</text>
-                    
-                    {/* Dimension lines - Wire Diameter */}
-                    <line x1="0" y1="-30" x2={parseFloat(results.meanDiameter) * 0.75} y2="-30" stroke="#10b981" strokeWidth="2"/>
-                    <line x1="0" y1="-35" x2="0" y2="-25" stroke="#10b981" strokeWidth="2"/>
-                    <line x1={parseFloat(results.meanDiameter) * 0.75} y1="-35" x2={parseFloat(results.meanDiameter) * 0.75} y2="-25" stroke="#10b981" strokeWidth="2"/>
-                    <text x={parseFloat(results.meanDiameter) * 0.4} y="-40" fontSize="14" fill="#10b981" fontWeight="bold" textAnchor="middle">d={inputs.wireDiameter}mm</text>
-                    
-                    {/* Dimension lines - Mean Diameter */}
-                    <line x1={-parseFloat(results.meanDiameter) * 0.75} y1={parseFloat(results.totalCoils) * 40 + 30} x2={parseFloat(results.meanDiameter) * 0.75} y2={parseFloat(results.totalCoils) * 40 + 30} stroke="#8b5cf6" strokeWidth="2"/>
-                    <line x1={-parseFloat(results.meanDiameter) * 0.75} y1={parseFloat(results.totalCoils) * 40 + 25} x2={-parseFloat(results.meanDiameter) * 0.75} y2={parseFloat(results.totalCoils) * 40 + 35} stroke="#8b5cf6" strokeWidth="2"/>
-                    <line x1={parseFloat(results.meanDiameter) * 0.75} y1={parseFloat(results.totalCoils) * 40 + 25} x2={parseFloat(results.meanDiameter) * 0.75} y2={parseFloat(results.totalCoils) * 40 + 35} stroke="#8b5cf6" strokeWidth="2"/>
-                    <text x="0" y={parseFloat(results.totalCoils) * 40 + 50} fontSize="14" fill="#8b5cf6" fontWeight="bold" textAnchor="middle">D={results.meanDiameter}mm</text>
-                    
-                    {/* Pitch annotation */}
-                    <line x1="80" y1="60" x2="80" y2="100" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3,3"/>
-                    <line x1="75" y1="60" x2="85" y2="60" stroke="#f59e0b" strokeWidth="2"/>
-                    <line x1="75" y1="100" x2="85" y2="100" stroke="#f59e0b" strokeWidth="2"/>
-                    <text x="90" y="85" fontSize="14" fill="#f59e0b" fontWeight="bold">t={results.pitch}mm</text>
+
+                    {/* End plates */}
+                    <rect x={-parseFloat(results.meanDiameter) * 1.2} y={30} width={parseFloat(results.meanDiameter) * 2.4} height={6} fill="#3b82f6" />
+                    <rect
+                      x={-parseFloat(results.meanDiameter) * 1.2}
+                      y={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 60)}
+                      width={parseFloat(results.meanDiameter) * 2.4}
+                      height={6}
+                      fill="#3b82f6"
+                    />
+
+                    {/* Free Length Dimension */}
+                    <line x1="-100" y1={33} x2="-100" y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63)} stroke="#ef4444" strokeWidth="2" />
+                    <line x1="-105" y1={33} x2="-95" y2={33} stroke="#ef4444" strokeWidth="2" />
+                    <line x1="-105" y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63)} x2="-95" y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63)} stroke="#ef4444" strokeWidth="2" />
+                    <text x="-130" y={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63) / 2} fontSize="14" fill="#ef4444" fontWeight="bold">
+                      H₀={inputs.freeLength}mm
+                    </text>
+
+                    {/* Wire Diameter */}
+                    <line x1="0" y1="-30" x2={parseFloat(results.meanDiameter) * 1.0} y2="-30" stroke="#10b981" strokeWidth="2" />
+                    <line x1="0" y1="-35" x2="0" y2="-25" stroke="#10b981" strokeWidth="2" />
+                    <line x1={parseFloat(results.meanDiameter) * 1.0} y1="-35" x2={parseFloat(results.meanDiameter) * 1.0} y2="-25" stroke="#10b981" strokeWidth="2" />
+                    <text x={parseFloat(results.meanDiameter) * 0.5} y="-40" fontSize="14" fill="#10b981" fontWeight="bold" textAnchor="middle">
+                      d={inputs.wireDiameter}mm
+                    </text>
+
+                    {/* Mean Diameter */}
+                    <line
+                      x1={-parseFloat(results.meanDiameter) * 1.0}
+                      y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 90)}
+                      x2={parseFloat(results.meanDiameter) * 1.0}
+                      y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 90)}
+                      stroke="#8b5cf6"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1={-parseFloat(results.meanDiameter) * 1.0}
+                      y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 85)}
+                      x2={-parseFloat(results.meanDiameter) * 1.0}
+                      y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 95)}
+                      stroke="#8b5cf6"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1={parseFloat(results.meanDiameter) * 1.0}
+                      y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 85)}
+                      x2={parseFloat(results.meanDiameter) * 1.0}
+                      y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 95)}
+                      stroke="#8b5cf6"
+                      strokeWidth="2"
+                    />
+                    <text
+                      x="0"
+                      y={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 110)}
+                      fontSize="14"
+                      fill="#8b5cf6"
+                      fontWeight="bold"
+                      textAnchor="middle"
+                    >
+                      D={results.meanDiameter}mm
+                    </text>
                   </g>
-                  
-                  {/* Information box */}
+
+                  {/* Info Box */}
                   <g transform="translate(550, 100)">
-                    <rect width="220" height="280" fill="#f9fafb" stroke="#d1d5db" strokeWidth="2" rx="8"/>
+                    <rect width="220" height="280" fill="#f9fafb" stroke="#d1d5db" strokeWidth="2" rx="8" />
                     <text x="110" y="30" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#374151">Key Parameters</text>
-                    
+
                     <text x="20" y="60" fontSize="13" fill="#4b5563">Material:</text>
-                    <text x="200" y="60" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{materials[inputs.material].name.split(' ')[0]}</text>
-                    
+                    <text x="200" y="60" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {materials[inputs.material].name.split(' ')[0]}
+                    </text>
+
                     <text x="20" y="85" fontSize="13" fill="#4b5563">Total Coils:</text>
-                    <text x="200" y="85" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{results.totalCoils}</text>
-                    
+                    <text x="200" y="85" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {results.totalCoils}
+                    </text>
+
                     <text x="20" y="110" fontSize="13" fill="#4b5563">Spring Rate:</text>
-                    <text x="200" y="110" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{results.springRate} N/mm</text>
-                    
+                    <text x="200" y="110" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {results.springRate} N/mm
+                    </text>
+
                     <text x="20" y="135" fontSize="13" fill="#4b5563">Spring Index:</text>
-                    <text x="200" y="135" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{results.springIndex}</text>
-                    
+                    <text x="200" y="135" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {results.springIndex}
+                    </text>
+
                     <text x="20" y="160" fontSize="13" fill="#4b5563">Max Stress:</text>
-                    <text x="200" y="160" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{results.maxShearStress} MPa</text>
-                    
+                    <text x="200" y="160" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {results.maxShearStress} MPa
+                    </text>
+
                     <text x="20" y="185" fontSize="13" fill="#4b5563">Safety Factor:</text>
-                    <text x="200" y="185" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{results.safetyFactor}</text>
-                    
+                    <text x="200" y="185" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {results.safetyFactor}
+                    </text>
+
                     <text x="20" y="210" fontSize="13" fill="#4b5563">Solid Length:</text>
-                    <text x="200" y="210" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{results.solidLength} mm</text>
-                    
+                    <text x="200" y="210" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {results.solidLength} mm
+                    </text>
+
                     <text x="20" y="235" fontSize="13" fill="#4b5563">Stability:</text>
-                    <text x="200" y="235" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">{results.stabilityStatus}</text>
-                    
-                    <rect x="10" y="245" width="200" height="25" fill={results.isValid ? '#d1fae5' : '#fef3c7'} stroke={results.isValid ? '#10b981' : '#f59e0b'} strokeWidth="2" rx="4"/>
-                    <text x="110" y="262" textAnchor="middle" fontSize="13" fontWeight="bold" fill={results.isValid ? '#065f46' : '#92400e'}>
+                    <text x="200" y="235" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
+                      {results.stabilityStatus}
+                    </text>
+
+                    <rect
+                      x="10"
+                      y="245"
+                      width="200"
+                      height="25"
+                      fill={results.isValid ? '#d1fae5' : '#fef3c7'}
+                      stroke={results.isValid ? '#10b981' : '#f59e0b'}
+                      strokeWidth="2"
+                      rx="4"
+                    />
+                    <text
+                      x="110"
+                      y="262"
+                      textAnchor="middle"
+                      fontSize="13"
+                      fontWeight="bold"
+                      fill={results.isValid ? '#065f46' : '#92400e'}
+                    >
                       {results.isValid ? '✓ Valid Design' : '⚠ Check Parameters'}
                     </text>
                   </g>
-                  
+
                   {/* Legend */}
                   <g transform="translate(50, 520)">
                     <text x="0" y="0" fontSize="14" fontWeight="bold" fill="#374151">Dimensions:</text>
-                    <line x1="0" y1="15" x2="30" y2="15" stroke="#ef4444" strokeWidth="2"/>
+                    <line x1="0" y1="15" x2="30" y2="15" stroke="#ef4444" strokeWidth="2" />
                     <text x="40" y="20" fontSize="12" fill="#6b7280">Free Length (H₀)</text>
-                    
-                    <line x1="150" y1="15" x2="180" y2="15" stroke="#10b981" strokeWidth="2"/>
+
+                    <line x1="150" y1="15" x2="180" y2="15" stroke="#10b981" strokeWidth="2" />
                     <text x="190" y="20" fontSize="12" fill="#6b7280">Wire Diameter (d)</text>
-                    
-                    <line x1="330" y1="15" x2="360" y2="15" stroke="#8b5cf6" strokeWidth="2"/>
+
+                    <line x1="330" y1="15" x2="360" y2="15" stroke="#8b5cf6" strokeWidth="2" />
                     <text x="370" y="20" fontSize="12" fill="#6b7280">Mean Diameter (D)</text>
-                    
-                    <line x1="510" y1="15" x2="540" y2="15" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3,3"/>
-                    <text x="550" y="20" fontSize="12" fill="#6b7280">Pitch (t)</text>
                   </g>
                 </svg>
               </div>
-              
-              <div className={`p-4 rounded-lg mb-4 ${results.isValid ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+
+              <div
+                className={`p-4 rounded-lg mb-4 ${
+                  results.isValid ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'
+                }`}
+              >
                 <div className="flex items-start gap-2">
-                  <Info className={`w-5 h-5 mt-0.5 ${results.isValid ? 'text-green-600' : 'text-yellow-600'}`} />
+                  <Info
+                    className={`w-5 h-5 mt-0.5 ${results.isValid ? 'text-green-600' : 'text-yellow-600'}`}
+                  />
                   <div>
-                    <p className={`font-medium ${results.isValid ? 'text-green-800' : 'text-yellow-800'}`}>
+                    <p
+                      className={`font-medium ${
+                        results.isValid ? 'text-green-800' : 'text-yellow-800'
+                      }`}
+                    >
                       {results.isValid ? '✓ Design is Valid' : '⚠ Parameters Need Adjustment'}
                     </p>
                     {!results.isValid && (
                       <p className="text-sm text-yellow-700 mt-1">
-                        Suggestions: {parseFloat(results.safetyFactor) < 1.2 ? 'Increase wire diameter or reduce load; ' : ''}
-                        {parseFloat(results.springIndex) < 4 ? 'Increase mean diameter or reduce wire diameter; ' : ''}
-                        {parseFloat(results.springIndex) > 16 ? 'Reduce mean diameter or increase wire diameter' : ''}
+                        Suggestions:{' '}
+                        {parseFloat(results.safetyFactor) < 1.2
+                          ? 'Increase wire diameter or reduce load; '
+                          : ''}
+                        {parseFloat(results.springIndex) < 4
+                          ? 'Increase mean diameter or reduce wire diameter; '
+                          : ''}
+                        {parseFloat(results.springIndex) > 16
+                          ? 'Reduce mean diameter or increase wire diameter; '
+                          : ''}
+                        {parseFloat(results.minWorkingLength) <= parseFloat(results.solidLength)
+                          ? 'Increase free length to avoid solid compression; '
+                          : ''}
                       </p>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600">Mean Diameter D</p>
                   <p className="text-2xl font-bold text-blue-700">{results.meanDiameter} mm</p>
@@ -407,8 +525,8 @@ export default function CompressionSpringDesigner() {
                 </div>
 
                 <div className="bg-indigo-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Solid Load</p>
-                  <p className="text-2xl font-bold text-indigo-700">{results.solidLoad} N</p>
+                  <p className="text-sm text-gray-600">Min Working Length</p>
+                  <p className="text-2xl font-bold text-indigo-700">{results.minWorkingLength} mm</p>
                 </div>
 
                 <div className="bg-indigo-50 p-4 rounded-lg">
@@ -420,10 +538,10 @@ export default function CompressionSpringDesigner() {
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-2">Design Recommendations</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Spring index C should be between 4-16 (Current: {results.springIndex})</li>
+                  <li>• Spring index C should be between 4–16 (Current: {results.springIndex})</li>
                   <li>• Safety factor should be greater than 1.2 (Current: {results.safetyFactor})</li>
                   <li>• Slenderness ratio = {results.slendernessRatio}, Status: {results.stabilityStatus}</li>
-                  <li>• Maintain safety margin when compressed, solid load should not exceed 1.25 times max working load</li>
+                  <li>• Ensure min working length > solid length to avoid coil binding</li>
                 </ul>
               </div>
             </div>
@@ -435,10 +553,12 @@ export default function CompressionSpringDesigner() {
           <div className="text-sm text-gray-600 space-y-2">
             <p><strong>Basic Formulas:</strong></p>
             <p>• Spring rate: k = (F₂ - F₁) / h</p>
-            <p>• Effective coils: n = Gd⁴ / (8D³k)</p>
-            <p>• Shear stress: τ = K × 8FD / (πd³)</p>
+            <p>• Effective coils: n = G·d⁴ / (8·D³·k)</p>
+            <p>• Shear stress: τ = K · 8·F·D / (π·d³)</p>
             <p>• Spring index: C = D / d</p>
-            <p className="pt-2"><strong>Design Principles:</strong> Spring index C should be 4-16, safety factor &gt; 1.2, consider solid height and stability</p>
+            <p className="pt-2">
+              <strong>Design Principles:</strong> C ∈ [4,16], safety factor > 1.2, avoid solid compression, stability if L₀/D > 2.6
+            </p>
           </div>
         </div>
       </div>
