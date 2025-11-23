@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compression Spring Designer | 压缩弹簧设计计算器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        .spring-coil {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen flex items-center justify-center p-6">
+    <div class="max-w-5xl w-full">
+        <!-- Header with Logo -->
+        <div class="text-center mb-12 fade-in">
+            <div class="inline-block mb-6 float-animation">
+                <svg width="120" height="120" viewBox="0 0 120 120" class="text-indigo-600">
+                    <!-- Spring illustration -->
+                    <g transform="translate(60, 20)">
+                        <!-- Center line -->
+                        <line x1="0" y1="0" x2="0" y2="80" stroke="currentColor" stroke-width="1" stroke-dasharray="3,3" opacity="0.3"/>
+                        
+                        <!-- Spring coils -->
+                        <ellipse cx="-8" cy="10" rx="15" ry="4" class="spring-coil"/>
+                        <ellipse cx="8" cy="20" rx="15" ry="4" class="spring-coil"/>
+                        <ellipse cx="-8" cy="30" rx="15" ry="4" class="spring-coil"/>
+                        <ellipse cx="8" cy="40" rx="15" ry="4" class="spring-coil"/>
+                        <ellipse cx="-8" cy="50" rx="15" ry="4" class="spring-coil"/>
+                        <ellipse cx="8" cy="60" rx="15" ry="4" class="spring-coil"/>
+                        <ellipse cx="-8" cy="70" rx="15" ry="4" class="spring-coil"/>
+                        
+                        <!-- End coils -->
+                        <ellipse cx="0" cy="5" rx="12" ry="3" fill="currentColor"/>
+                        <ellipse cx="0" cy="75" rx="12" ry="3" fill="currentColor"/>
+                    </g>
+                </svg>
+            </div>
+            
+            <h1 class="text-5xl font-bold text-gray-800 mb-4">
+                Compression Spring Designer
+            </h1>
+            <h2 class="text-4xl font-bold text-gray-700 mb-6">
+                压缩弹簧设计计算器
+            </h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Professional spring design tool with technical drawings and real-time validation
+                <br>
+                专业的弹簧设计工具，包含技术图纸和实时验证
+            </p>
+        </div>
+
+        <!-- Language Selection Cards -->
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+            <!-- English Version -->
+            <a href="./en/compression-spring-designer.html" 
+               class="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden fade-in"
+               style="animation-delay: 0.2s; opacity: 0;">
+                <div class="p-8 h-full flex flex-col">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="text-6xl">🇬🇧</div>
+                        <div class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-semibold">
+                            English
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4 group-hover:text-indigo-600 transition-colors">
+                        English Version
+                    </h3>
+                    
+                    <p class="text-gray-600 mb-6 flex-grow">
+                        Complete spring design calculator with technical drawings, material database, and design validation tools.
+                    </p>
+                    
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            Technical Drawing Generation
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            Real-time Validation
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            Material Database
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-indigo-600 font-semibold group-hover:translate-x-2 transition-transform">
+                        <span>Launch Calculator</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Chinese Version -->
+            <a href="./cn/compression-spring-designer.html" 
+               class="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden fade-in"
+               style="animation-delay: 0.4s; opacity: 0;">
+                <div class="p-8 h-full flex flex-col">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="text-6xl">🇨🇳</div>
+                        <div class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-semibold">
+                            中文
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4 group-hover:text-red-600 transition-colors">
+                        中文版本
+                    </h3>
+                    
+                    <p class="text-gray-600 mb-6 flex-grow">
+                        完整的弹簧设计计算器，包含技术图纸、材料数据库和设计验证工具。
+                    </p>
+                    
+                    <div class="space-y-2 mb-6">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            技术图纸生成
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            实时验证
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            材料数据库
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-red-600 font-semibold group-hover:translate-x-2 transition-transform">
+                        <span>启动计算器</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 fade-in" style="animation-delay: 0.6s; opacity: 0;">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                Key Features | 主要功能
+            </h3>
+            
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Complete Calculations</h4>
+                    <p class="text-sm text-gray-600">完整计算</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="bg-green-100 text-green-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Technical Drawings</h4>
+                    <p class="text-sm text-gray-600">技术图纸</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="bg-purple-100 text-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Design Validation</h4>
+                    <p class="text-sm text-gray-600">设计验证</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="bg-orange-100 text-orange-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Mobile Friendly</h4>
+                    <p class="text-sm text-gray-600">移动友好</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-gray-600 text-sm fade-in" style="animation-delay: 0.8s; opacity: 0;">
+            <p class="mb-2">
+                Open Source Project | MIT License | 开源项目 | MIT 许可证
+            </p>
+            <p>
+                Made with ❤️ for Engineers | 为工程师用心打造 ❤️
+            </p>
+        </div>
+    </div>
+</body>
+</html
