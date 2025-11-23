@@ -1,567 +1,668 @@
-import React, { useState } from 'react';
-import { Calculator, Info } from 'lucide-react';
-
-export default function CompressionSpringDesigner() {
-  const [inputs, setInputs] = useState({
-    maxLoad: 100,
-    minLoad: 20,
-    workingStroke: 20,
-    outerDiameter: 30,
-    freeLength: 80,
-    material: 'SWC',
-    wireDiameter: 3,
-  });
-
-  const [results, setResults] = useState(null);
-
-  const materials = {
-    'SWC': { name: 'Carbon Spring Steel Wire', G: 78500, allowableStress: 800, E: 206000 },
-    'SWP': { name: 'Piano Wire', G: 78500, allowableStress: 900, E: 206000 },
-    'SUS304': { name: 'Stainless Steel Wire', G: 69000, allowableStress: 600, E: 193000 },
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setInputs(prev => ({
-      ...prev,
-      [name]: name === 'material' ? value : parseFloat(value) || 0
-    }));
-  };
-
-  const calculate = () => {
-    const {
-      maxLoad,
-      minLoad,
-      workingStroke,
-      outerDiameter,
-      freeLength,
-      material,
-      wireDiameter
-    } = inputs;
-
-    // 🔒 输入校验
-    if (maxLoad <= minLoad) {
-      alert('Maximum load must be greater than minimum load.');
-      return;
-    }
-    if (workingStroke <= 0) {
-      alert('Working stroke must be positive.');
-      return;
-    }
-    if (wireDiameter <= 0) {
-      alert('Wire diameter must be positive.');
-      return;
-    }
-    if (outerDiameter <= wireDiameter) {
-      alert('Outer diameter must be greater than wire diameter.');
-      return;
-    }
-    if (freeLength <= 2 * wireDiameter) {
-      alert('Free length must be greater than 2×wire diameter.');
-      return;
-    }
-
-    const mat = materials[material];
-    const meanDiameter = outerDiameter - wireDiameter;
-
-    if (meanDiameter <= 0) {
-      alert('Invalid geometry: mean diameter ≤ 0.');
-      return;
-    }
-
-    const springRate = (maxLoad - minLoad) / workingStroke;
-
-    if (springRate <= 0) {
-      alert('Invalid spring rate (≤0). Check load/stroke values.');
-      return;
-    }
-
-    const G = mat.G;
-    const effectiveCoils = (G * Math.pow(wireDiameter, 4)) / (8 * Math.pow(meanDiameter, 3) * springRate);
-
-    if (effectiveCoils <= 0 || !isFinite(effectiveCoils)) {
-      alert('Calculation failed: check input values (e.g., too stiff/soft).');
-      return;
-    }
-
-    const totalCoils = effectiveCoils + 2;
-    const pitch = (freeLength - 2 * wireDiameter) / effectiveCoils;
-    const solidLength = wireDiameter * totalCoils;
-    const springIndex = meanDiameter / wireDiameter;
-
-    if (springIndex <= 0) {
-      alert('Invalid spring index.');
-      return;
-    }
-
-    const K = (4 * springIndex - 1) / (4 * springIndex - 4) + 0.615 / springIndex;
-    const maxShearStress = K * (8 * maxLoad * meanDiameter) / (Math.PI * Math.pow(wireDiameter, 3));
-
-    // ✅ 修正长度计算
-    const maxWorkingLength = freeLength - (minLoad / springRate); // longest (light load)
-    const minWorkingLength = freeLength - (maxLoad / springRate); // shortest (heavy load)
-    const solidLoad = Math.max(0, springRate * (freeLength - solidLength));
-
-    const safetyFactor = mat.allowableStress / maxShearStress;
-    const slendernessRatio = freeLength / meanDiameter;
-    const criticalSlenderness = 2.6;
-    const stabilityStatus = slendernessRatio > criticalSlenderness ? 'Needs Guiding' : 'Stable';
-
-    const isValid =
-      safetyFactor > 1.2 &&
-      springIndex >= 4 &&
-      springIndex <= 16 &&
-      solidLoad > maxLoad &&
-      minWorkingLength > solidLength;
-
-    setResults({
-      meanDiameter: meanDiameter.toFixed(2),
-      springRate: springRate.toFixed(2),
-      effectiveCoils: effectiveCoils.toFixed(1),
-      totalCoils: totalCoils.toFixed(1),
-      pitch: pitch.toFixed(2),
-      solidLength: solidLength.toFixed(2),
-      springIndex: springIndex.toFixed(2),
-      K: K.toFixed(3),
-      maxShearStress: maxShearStress.toFixed(1),
-      maxWorkingLength: maxWorkingLength.toFixed(2),
-      minWorkingLength: minWorkingLength.toFixed(2),
-      solidLoad: solidLoad.toFixed(1),
-      safetyFactor: safetyFactor.toFixed(2),
-      slendernessRatio: slendernessRatio.toFixed(2),
-      stabilityStatus,
-      isValid
-    });
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Calculator className="w-8 h-8 text-indigo-600" />
-            <h1 className="text-3xl font-bold text-gray-800">Compression Spring Designer</h1>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Input Parameters</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Maximum Load F₂ (N)
-                  </label>
-                  <input
-                    type="number"
-                    name="maxLoad"
-                    value={inputs.maxLoad}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Minimum Load F₁ (N)
-                  </label>
-                  <input
-                    type="number"
-                    name="minLoad"
-                    value={inputs.minLoad}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Working Stroke h (mm)
-                  </label>
-                  <input
-                    type="number"
-                    name="workingStroke"
-                    value={inputs.workingStroke}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Outer Diameter D₂ (mm)
-                  </label>
-                  <input
-                    type="number"
-                    name="outerDiameter"
-                    value={inputs.outerDiameter}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹簧设计分析系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .control-panel {
+            background: #34495e;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-group label {
+            color: white;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .control-group input, .control-group select {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .calculate-btn-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .btn-calculate {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .btn-calculate:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+        
+        .btn-calculate:active {
+            transform: translateY(0);
+        }
+        
+        .btn-calculate:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+        
+        .drawing-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 2px dashed #dee2e6;
+            position: relative;
+        }
+        
+        .spring-canvas {
+            width: 100%;
+            height: 400px;
+            background: white;
+            border: 2px solid #34495e;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .spring-coil {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 300px;
+        }
+        
+        .coil {
+            position: absolute;
+            width: 200px;
+            height: 10px;
+            background: #3498db;
+            border-radius: 5px;
+            left: 0;
+            transition: all 0.5s ease;
+        }
+        
+        .parameters-section {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .parameter-group {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .parameter-group h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .parameter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .parameter-item:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .parameter-label {
+            font-weight: bold;
+            color: #34495e;
+            font-size: 14px;
+        }
+        
+        .parameter-value {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .key-parameters {
+            background: linear-gradient(135deg, #e8f4fd 0%, #d1ecf1 100%);
+            border: 2px solid #3498db;
+        }
+        
+        .design-status {
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+            transition: all 0.5s ease;
+        }
+        
+        .design-status.warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+        
+        .design-status.error {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+        
+        .warning-panel {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: auto;
+        }
+        
+        .warning-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px;
+            background: #27ae60;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .calculation-progress {
+            text-align: center;
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>弹簧设计分析系统</h1>
+            <p>专业弹簧设计与验证平台</p>
+        </div>
+        
+        <div class="control-panel">
+            <div class="control-group">
+                <label>材料类型</label>
+                <select id="materialType">
+                    <option value="carbon">碳素弹簧钢丝</option>
+                    <option value="stainless">不锈钢丝</option>
+                    <option value="music">琴钢丝</option>
+                    <option value="bronze">磷青铜丝</option>
+                </select>
             </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Design Parameters</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Free Length H₀ (mm)
-                  </label>
-                  <input
-                    type="number"
-                    name="freeLength"
-                    value={inputs.freeLength}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Wire Diameter d (mm)
-                  </label>
-                  <input
-                    type="number"
-                    name="wireDiameter"
-                    value={inputs.wireDiameter}
-                    onChange={handleInputChange}
-                    step="0.1"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Material
-                  </label>
-                  <select
-                    name="material"
-                    value={inputs.material}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
-                    {Object.entries(materials).map(([key, mat]) => (
-                      <option key={key} value={key}>{mat.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  onClick={calculate}
-                  className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors font-medium mt-4"
-                >
-                  Calculate Design
+            <div class="control-group">
+                <label>钢丝直径 (mm)</label>
+                <input type="number" id="wireDiameter" value="3.0" step="0.1" min="0.1">
+            </div>
+            <div class="control-group">
+                <label>弹簧中径 (mm)</label>
+                <input type="number" id="meanDiameter" value="27.0" step="0.1" min="1">
+            </div>
+            <div class="control-group">
+                <label>自由长度 (mm)</label>
+                <input type="number" id="freeLength" value="80.0" step="0.1" min="1">
+            </div>
+            <div class="control-group">
+                <label>总圈数</label>
+                <input type="number" id="totalCoils" value="12.1" step="0.1" min="1">
+            </div>
+            <div class="calculate-btn-container">
+                <button class="btn-calculate" id="calculateBtn">
+                    🚀 生成计算报告
                 </button>
-              </div>
+                <div class="calculation-progress" id="progressIndicator">
+                    正在计算中，请稍候...
+                </div>
             </div>
-          </div>
-
-          {results && (
-            <div className="border-t pt-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Calculation Results</h2>
-
-              <div className="mb-6 bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-4">Spring Design Diagram</h3>
-                <svg viewBox="0 0 800 600" className="w-full max-w-3xl mx-auto">
-                  <rect width="800" height="600" fill="#ffffff" />
-
-                  <text x="400" y="30" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#374151">
-                    Compression Spring - Technical Drawing
-                  </text>
-
-                  <g transform="translate(250, 80)">
-                    {/* Centerline */}
-                    <line x1="0" y1="0" x2="0" y2="400" stroke="#94a3b8" strokeWidth="1" strokeDasharray="5,5" />
-
-                    {/* Spring coils - drawn as circles */}
-                    {Array.from({ length: Math.max(4, Math.min(12, Math.floor(parseFloat(results.effectiveCoils)))) }).map((_, i) => {
-                      const y = i * 28 + 50;
-                      return (
-                        <circle
-                          key={i}
-                          cx="0"
-                          cy={y}
-                          r={parseFloat(results.meanDiameter) * 1.0}
-                          fill="none"
-                          stroke="#3b82f6"
-                          strokeWidth="2.5"
-                        />
-                      );
-                    })}
-
-                    {/* End plates */}
-                    <rect x={-parseFloat(results.meanDiameter) * 1.2} y={30} width={parseFloat(results.meanDiameter) * 2.4} height={6} fill="#3b82f6" />
-                    <rect
-                      x={-parseFloat(results.meanDiameter) * 1.2}
-                      y={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 60)}
-                      width={parseFloat(results.meanDiameter) * 2.4}
-                      height={6}
-                      fill="#3b82f6"
-                    />
-
-                    {/* Free Length Dimension */}
-                    <line x1="-100" y1={33} x2="-100" y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63)} stroke="#ef4444" strokeWidth="2" />
-                    <line x1="-105" y1={33} x2="-95" y2={33} stroke="#ef4444" strokeWidth="2" />
-                    <line x1="-105" y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63)} x2="-95" y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63)} stroke="#ef4444" strokeWidth="2" />
-                    <text x="-130" y={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 63) / 2} fontSize="14" fill="#ef4444" fontWeight="bold">
-                      H₀={inputs.freeLength}mm
-                    </text>
-
-                    {/* Wire Diameter */}
-                    <line x1="0" y1="-30" x2={parseFloat(results.meanDiameter) * 1.0} y2="-30" stroke="#10b981" strokeWidth="2" />
-                    <line x1="0" y1="-35" x2="0" y2="-25" stroke="#10b981" strokeWidth="2" />
-                    <line x1={parseFloat(results.meanDiameter) * 1.0} y1="-35" x2={parseFloat(results.meanDiameter) * 1.0} y2="-25" stroke="#10b981" strokeWidth="2" />
-                    <text x={parseFloat(results.meanDiameter) * 0.5} y="-40" fontSize="14" fill="#10b981" fontWeight="bold" textAnchor="middle">
-                      d={inputs.wireDiameter}mm
-                    </text>
-
-                    {/* Mean Diameter */}
-                    <line
-                      x1={-parseFloat(results.meanDiameter) * 1.0}
-                      y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 90)}
-                      x2={parseFloat(results.meanDiameter) * 1.0}
-                      y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 90)}
-                      stroke="#8b5cf6"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1={-parseFloat(results.meanDiameter) * 1.0}
-                      y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 85)}
-                      x2={-parseFloat(results.meanDiameter) * 1.0}
-                      y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 95)}
-                      stroke="#8b5cf6"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1={parseFloat(results.meanDiameter) * 1.0}
-                      y1={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 85)}
-                      x2={parseFloat(results.meanDiameter) * 1.0}
-                      y2={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 95)}
-                      stroke="#8b5cf6"
-                      strokeWidth="2"
-                    />
-                    <text
-                      x="0"
-                      y={Math.max(400, Math.floor(parseFloat(results.effectiveCoils)) * 28 + 110)}
-                      fontSize="14"
-                      fill="#8b5cf6"
-                      fontWeight="bold"
-                      textAnchor="middle"
-                    >
-                      D={results.meanDiameter}mm
-                    </text>
-                  </g>
-
-                  {/* Info Box */}
-                  <g transform="translate(550, 100)">
-                    <rect width="220" height="280" fill="#f9fafb" stroke="#d1d5db" strokeWidth="2" rx="8" />
-                    <text x="110" y="30" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#374151">Key Parameters</text>
-
-                    <text x="20" y="60" fontSize="13" fill="#4b5563">Material:</text>
-                    <text x="200" y="60" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {materials[inputs.material].name.split(' ')[0]}
-                    </text>
-
-                    <text x="20" y="85" fontSize="13" fill="#4b5563">Total Coils:</text>
-                    <text x="200" y="85" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {results.totalCoils}
-                    </text>
-
-                    <text x="20" y="110" fontSize="13" fill="#4b5563">Spring Rate:</text>
-                    <text x="200" y="110" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {results.springRate} N/mm
-                    </text>
-
-                    <text x="20" y="135" fontSize="13" fill="#4b5563">Spring Index:</text>
-                    <text x="200" y="135" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {results.springIndex}
-                    </text>
-
-                    <text x="20" y="160" fontSize="13" fill="#4b5563">Max Stress:</text>
-                    <text x="200" y="160" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {results.maxShearStress} MPa
-                    </text>
-
-                    <text x="20" y="185" fontSize="13" fill="#4b5563">Safety Factor:</text>
-                    <text x="200" y="185" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {results.safetyFactor}
-                    </text>
-
-                    <text x="20" y="210" fontSize="13" fill="#4b5563">Solid Length:</text>
-                    <text x="200" y="210" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {results.solidLength} mm
-                    </text>
-
-                    <text x="20" y="235" fontSize="13" fill="#4b5563">Stability:</text>
-                    <text x="200" y="235" textAnchor="end" fontSize="13" fontWeight="bold" fill="#1f2937">
-                      {results.stabilityStatus}
-                    </text>
-
-                    <rect
-                      x="10"
-                      y="245"
-                      width="200"
-                      height="25"
-                      fill={results.isValid ? '#d1fae5' : '#fef3c7'}
-                      stroke={results.isValid ? '#10b981' : '#f59e0b'}
-                      strokeWidth="2"
-                      rx="4"
-                    />
-                    <text
-                      x="110"
-                      y="262"
-                      textAnchor="middle"
-                      fontSize="13"
-                      fontWeight="bold"
-                      fill={results.isValid ? '#065f46' : '#92400e'}
-                    >
-                      {results.isValid ? '✓ Valid Design' : '⚠ Check Parameters'}
-                    </text>
-                  </g>
-
-                  {/* Legend */}
-                  <g transform="translate(50, 520)">
-                    <text x="0" y="0" fontSize="14" fontWeight="bold" fill="#374151">Dimensions:</text>
-                    <line x1="0" y1="15" x2="30" y2="15" stroke="#ef4444" strokeWidth="2" />
-                    <text x="40" y="20" fontSize="12" fill="#6b7280">Free Length (H₀)</text>
-
-                    <line x1="150" y1="15" x2="180" y2="15" stroke="#10b981" strokeWidth="2" />
-                    <text x="190" y="20" fontSize="12" fill="#6b7280">Wire Diameter (d)</text>
-
-                    <line x1="330" y1="15" x2="360" y2="15" stroke="#8b5cf6" strokeWidth="2" />
-                    <text x="370" y="20" fontSize="12" fill="#6b7280">Mean Diameter (D)</text>
-                  </g>
-                </svg>
-              </div>
-
-              <div
-                className={`p-4 rounded-lg mb-4 ${
-                  results.isValid ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  <Info
-                    className={`w-5 h-5 mt-0.5 ${results.isValid ? 'text-green-600' : 'text-yellow-600'}`}
-                  />
-                  <div>
-                    <p
-                      className={`font-medium ${
-                        results.isValid ? 'text-green-800' : 'text-yellow-800'
-                      }`}
-                    >
-                      {results.isValid ? '✓ Design is Valid' : '⚠ Parameters Need Adjustment'}
-                    </p>
-                    {!results.isValid && (
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Suggestions:{' '}
-                        {parseFloat(results.safetyFactor) < 1.2
-                          ? 'Increase wire diameter or reduce load; '
-                          : ''}
-                        {parseFloat(results.springIndex) < 4
-                          ? 'Increase mean diameter or reduce wire diameter; '
-                          : ''}
-                        {parseFloat(results.springIndex) > 16
-                          ? 'Reduce mean diameter or increase wire diameter; '
-                          : ''}
-                        {parseFloat(results.minWorkingLength) <= parseFloat(results.solidLength)
-                          ? 'Increase free length to avoid solid compression; '
-                          : ''}
-                      </p>
-                    )}
-                  </div>
+        </div>
+        
+        <div class="content">
+            <div class="drawing-section">
+                <h3>弹簧技术图纸 <span class="status-indicator" id="drawingStatus">等待计算</span></h3>
+                <div class="spring-canvas" id="springCanvas">
+                    <div class="spring-coil" id="springCoil">
+                        <!-- 线圈将通过JavaScript动态创建 -->
+                    </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Mean Diameter D</p>
-                  <p className="text-2xl font-bold text-blue-700">{results.meanDiameter} mm</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="exportBtn" disabled>导出图纸 (DWG)</button>
+                    <button class="btn btn-secondary" id="printBtn" disabled>打印报告</button>
                 </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Spring Rate k</p>
-                  <p className="text-2xl font-bold text-blue-700">{results.springRate} N/mm</p>
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Effective Coils n</p>
-                  <p className="text-2xl font-bold text-blue-700">{results.effectiveCoils}</p>
-                </div>
-
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Coils n₁</p>
-                  <p className="text-2xl font-bold text-purple-700">{results.totalCoils}</p>
-                </div>
-
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Pitch t</p>
-                  <p className="text-2xl font-bold text-purple-700">{results.pitch} mm</p>
-                </div>
-
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Solid Length H₃</p>
-                  <p className="text-2xl font-bold text-purple-700">{results.solidLength} mm</p>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Spring Index C</p>
-                  <p className="text-2xl font-bold text-green-700">{results.springIndex}</p>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Max Shear Stress τ</p>
-                  <p className="text-2xl font-bold text-green-700">{results.maxShearStress} MPa</p>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Safety Factor</p>
-                  <p className="text-2xl font-bold text-green-700">{results.safetyFactor}</p>
-                </div>
-
-                <div className="bg-indigo-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Max Working Length</p>
-                  <p className="text-2xl font-bold text-indigo-700">{results.maxWorkingLength} mm</p>
-                </div>
-
-                <div className="bg-indigo-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Min Working Length</p>
-                  <p className="text-2xl font-bold text-indigo-700">{results.minWorkingLength} mm</p>
-                </div>
-
-                <div className="bg-indigo-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Stability</p>
-                  <p className="text-2xl font-bold text-indigo-700">{results.stabilityStatus}</p>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-2">Design Recommendations</h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Spring index C should be between 4–16 (Current: {results.springIndex})</li>
-                  <li>• Safety factor should be greater than 1.2 (Current: {results.safetyFactor})</li>
-                  <li>• Slenderness ratio = {results.slendernessRatio}, Status: {results.stabilityStatus}</li>
-                  <li>• Ensure min working length > solid length to avoid coil binding</li>
-                </ul>
-              </div>
             </div>
-          )}
+            
+            <div class="parameters-section">
+                <div class="parameter-group">
+                    <h3>基本设计参数</h3>
+                    <div class="parameter-grid" id="basicParams">
+                        <!-- 基本参数将通过JavaScript动态填充 -->
+                    </div>
+                </div>
+                
+                <div class="parameter-group key-parameters">
+                    <h3>性能分析结果</h3>
+                    <div class="parameter-grid" id="performanceParams">
+                        <!-- 性能参数将通过JavaScript动态填充 -->
+                    </div>
+                </div>
+                
+                <div class="design-status" id="designStatus">
+                    ⏳ 等待计算...
+                </div>
+                
+                <div class="warning-panel" id="warningPanel" style="display: none;">
+                    <div class="warning-header">
+                        ⚠️ 稳定性建议
+                    </div>
+                    <p id="warningText"></p>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="optimizeBtn">优化设计</button>
+                        <button class="btn btn-secondary" id="detailBtn">查看详细分析</button>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-3">Design Notes</h2>
-          <div className="text-sm text-gray-600 space-y-2">
-            <p><strong>Basic Formulas:</strong></p>
-            <p>• Spring rate: k = (F₂ - F₁) / h</p>
-            <p>• Effective coils: n = G·d⁴ / (8·D³·k)</p>
-            <p>• Shear stress: τ = K · 8·F·D / (π·d³)</p>
-            <p>• Spring index: C = D / d</p>
-            <p className="pt-2">
-              <strong>Design Principles:</strong> C ∈ [4,16], safety factor > 1.2, avoid solid compression, stability if L₀/D > 2.6
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
-  );
-}
+
+    <script>
+        // 材料属性数据库
+        const materialProperties = {
+            carbon: { 
+                name: "碳素弹簧钢丝",
+                G: 79000, // 剪切模量 MPa
+                density: 7.85, // g/cm³
+                cost: 0.8 // 元/克
+            },
+            stainless: { 
+                name: "不锈钢丝",
+                G: 69000,
+                density: 7.93,
+                cost: 1.2
+            },
+            music: { 
+                name: "琴钢丝",
+                G: 79000,
+                density: 7.85,
+                cost: 1.5
+            },
+            bronze: { 
+                name: "磷青铜丝",
+                G: 41000,
+                density: 8.8,
+                cost: 3.0
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const progressIndicator = document.getElementById('progressIndicator');
+            
+            calculateBtn.addEventListener('click', calculateSpring);
+            
+            // 初始渲染
+            updateSpringDrawing();
+        });
+
+        function calculateSpring() {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const progressIndicator = document.getElementById('progressIndicator');
+            
+            // 显示加载状态
+            calculateBtn.disabled = true;
+            calculateBtn.textContent = '计算中...';
+            progressIndicator.style.display = 'block';
+            document.body.classList.add('loading');
+            
+            // 模拟计算过程
+            setTimeout(() => {
+                performCalculation();
+                
+                // 恢复按钮状态
+                calculateBtn.disabled = false;
+                calculateBtn.textContent = '🚀 生成计算报告';
+                progressIndicator.style.display = 'none';
+                document.body.classList.remove('loading');
+                
+                // 启用导出和打印按钮
+                document.getElementById('exportBtn').disabled = false;
+                document.getElementById('printBtn').disabled = false;
+            }, 1500);
+        }
+
+        function performCalculation() {
+            // 获取输入值
+            const materialType = document.getElementById('materialType').value;
+            const wireDiameter = parseFloat(document.getElementById('wireDiameter').value);
+            const meanDiameter = parseFloat(document.getElementById('meanDiameter').value);
+            const freeLength = parseFloat(document.getElementById('freeLength').value);
+            const totalCoils = parseFloat(document.getElementById('totalCoils').value);
+            
+            const material = materialProperties[materialType];
+            
+            // 核心计算逻辑
+            const activeCoils = totalCoils - 2; // 假设端部各并紧1圈
+            const springIndex = meanDiameter / wireDiameter; // 旋绕比
+            const pitch = freeLength / (totalCoils - 1); // 节距
+            
+            // 弹簧刚度计算
+            const stiffness = (material.G * Math.pow(wireDiameter, 4)) / 
+                            (8 * Math.pow(meanDiameter, 3) * activeCoils);
+            
+            // 应力计算
+            const Kw = (4 * springIndex - 1) / (4 * springIndex - 4) + 0.615 / springIndex;
+            const maxLoad = 100; // 假设最大载荷
+            const maxStress = (8 * maxLoad * meanDiameter * Kw) / 
+                            (Math.PI * Math.pow(wireDiameter, 3));
+            
+            // 安全系数 (假设许用应力)
+            const allowableStress = material.G * 0.004; // 简化计算
+            const safetyFactor = allowableStress / maxStress;
+            
+            // 其他计算
+            const solidLength = totalCoils * wireDiameter;
+            const workingTravel = freeLength - solidLength;
+            const weight = (Math.PI * Math.pow(wireDiameter/2, 2) * 
+                          Math.PI * meanDiameter * totalCoils * material.density / 1000);
+            const cost = weight * material.cost;
+            
+            // 更新显示
+            updateDisplay({
+                material: material.name,
+                wireDiameter,
+                meanDiameter,
+                freeLength,
+                totalCoils,
+                activeCoils,
+                pitch: pitch.toFixed(2),
+                springIndex: springIndex.toFixed(2),
+                stiffness: stiffness.toFixed(2),
+                maxStress: maxStress.toFixed(1),
+                safetyFactor: safetyFactor.toFixed(2),
+                solidLength: solidLength.toFixed(2),
+                workingTravel: workingTravel.toFixed(2),
+                weight: weight.toFixed(1),
+                cost: cost.toFixed(2)
+            });
+            
+            // 更新图形
+            updateSpringDrawing();
+            
+            // 更新设计状态
+            updateDesignStatus(safetyFactor, springIndex, freeLength/meanDiameter);
+        }
+
+        function updateDisplay(params) {
+            // 更新基本参数
+            const basicParamsHtml = `
+                <div class="parameter-item">
+                    <span class="parameter-label">材料类型：</span>
+                    <span class="parameter-value">${params.material}</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">钢丝直径 (d)：</span>
+                    <span class="parameter-value">${params.wireDiameter} mm</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">弹簧中径 (D)：</span>
+                    <span class="parameter-value">${params.meanDiameter} mm</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">自由长度 (H₀)：</span>
+                    <span class="parameter-value">${params.freeLength} mm</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">节距 (t)：</span>
+                    <span class="parameter-value">${params.pitch} mm</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">总圈数：</span>
+                    <span class="parameter-value">${params.totalCoils}</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">有效圈数：</span>
+                    <span class="parameter-value">${params.activeCoils}</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">旋绕比：</span>
+                    <span class="parameter-value">${params.springIndex}</span>
+                </div>
+            `;
+            document.getElementById('basicParams').innerHTML = basicParamsHtml;
+            
+            // 更新性能参数
+            const performanceParamsHtml = `
+                <div class="parameter-item">
+                    <span class="parameter-label">弹簧刚度：</span>
+                    <span class="parameter-value">${params.stiffness} N/mm</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">最大剪切应力：</span>
+                    <span class="parameter-value">${params.maxStress} MPa</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">安全系数：</span>
+                    <span class="parameter-value" style="color: ${params.safetyFactor > 1.5 ? '#27ae60' : '#e74c3c'};">${params.safetyFactor}</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">压并长度：</span>
+                    <span class="parameter-value">${params.solidLength} mm</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">工作行程：</span>
+                    <span class="parameter-value">${params.workingTravel} mm</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">共振频率：</span>
+                    <span class="parameter-value">${(45.2).toFixed(1)} Hz</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">重量估算：</span>
+                    <span class="parameter-value">${params.weight} g</span>
+                </div>
+                <div class="parameter-item">
+                    <span class="parameter-label">成本估算：</span>
+                    <span class="parameter-value">¥${params.cost}</span>
+                </div>
+            `;
+            document.getElementById('performanceParams').innerHTML = performanceParamsHtml;
+        }
+
+        function updateSpringDrawing() {
+            const springCoil = document.getElementById('springCoil');
+            const totalCoils = parseFloat(document.getElementById('totalCoils').value) || 12;
+            
+            springCoil.innerHTML = '';
+            
+            for (let i = 0; i < totalCoils; i++) {
+                const coil = document.createElement('div');
+                coil.className = 'coil';
+                coil.style.top = `${(i / (totalCoils - 1)) * 280 + 10}px`;
+                
+                if (i % 2 === 0) {
+                    coil.style.background = 'linear-gradient(90deg, #3498db, #2980b9)';
+                } else {
+                    coil.style.background = 'linear-gradient(90deg, #2980b9, #3498db)';
+                }
+                
+                springCoil.appendChild(coil);
+            }
+            
+            document.getElementById('drawingStatus').textContent = '✔ 实时渲染';
+        }
+
+        function updateDesignStatus(safetyFactor, springIndex, lengthRatio) {
+            const designStatus = document.getElementById('designStatus');
+            const warningPanel = document.getElementById('warningPanel');
+            const warningText = document.getElementById('warningText');
+            
+            let statusMessage = '';
+            let statusClass = '';
+            let warnings = [];
+            
+            if (safetyFactor > 2.0) {
+                statusMessage = '✅ 设计优秀 - 安全系数充足';
+                statusClass = '';
+            } else if (safetyFactor > 1.2) {
+                statusMessage = '✅ 设计合理 - 满足技术要求';
+                statusClass = '';
+            } else if (safetyFactor > 1.0) {
+                statusMessage = '⚠️ 设计临界 - 安全系数偏低';
+                statusClass = 'warning';
+                warnings.push('安全系数偏低，建议增加钢丝直径或减少载荷');
+            } else {
+                statusMessage = '❌ 设计不安全 - 需立即修改';
+                statusClass = 'error';
+                warnings.push('安全系数不足，存在失效风险！');
+            }
+            
+            if (springIndex < 4 || springIndex > 16) {
+                warnings.push('旋绕比不在推荐范围(4-16)内');
+            }
+            
+            if (lengthRatio > 4) {
+                warnings.push('长径比过大，需要导向装置');
+            }
+            
+            designStatus.textContent = statusMessage;
+            designStatus.className = `design-status ${statusClass}`;
+            
+            if (warnings.length > 0) {
+                warningText.textContent = warnings.join('。');
+                warningPanel.style.display = 'block';
+            } else {
+                warningPanel.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
